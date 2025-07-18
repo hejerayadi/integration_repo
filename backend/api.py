@@ -6,6 +6,13 @@ from models.speech_emotion_model import EmotionPredictor
 import time
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from langchain.memory import ConversationBufferMemory
+import sys
+import os
+
+# Add the existing chatbot directory to the path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'anas & dorra work', 'app'))
+from chatbot import answer
 
 app = Flask(__name__)
 CORS(app)
@@ -31,6 +38,12 @@ Do not give clinical advice. Just listen, reassure, and guide them with hope and
 
 
 predictor = EmotionPredictor()
+
+# Initialize recipe chatbot memory
+recipe_memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
+# The recipe chatbot will be initialized when the module is imported
+print("✅ Recipe chatbot ready!")
 
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "phi2-mentalhealth-final")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
@@ -207,5 +220,34 @@ def chat_get():
         traceback.print_exc()
         return jsonify({"response": "Sorry, something went wrong.", "error": str(e)}), 500
 
+@app.route('/recipe-chat', methods=['POST'])
+def recipe_chat():
+    """Recipe chatbot endpoint"""
+    try:
+        print("=== RECIPE CHAT POST REQUEST RECEIVED ===")
+        
+        # Accept both JSON and multipart/form-data
+        if request.content_type.startswith('application/json'):
+            data = request.get_json()
+            user_message = data.get('message', '')
+        else:
+            user_message = request.form.get('message', '')
+
+        print(f"Recipe query: {user_message}")
+
+        if not user_message.strip():
+            return jsonify({"error": "No message provided"}), 400
+
+        # Get recipe response using existing chatbot function
+        response = answer(user_message, recipe_memory)
+        
+        return jsonify({"response": response})
+        
+    except Exception as e:
+        import traceback
+        print('Error in /recipe-chat POST:', e)
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    app.run(port=5000, debug=False)

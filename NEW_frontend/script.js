@@ -11,9 +11,16 @@ document.getElementById("chat-form").addEventListener("submit", async function (
   // Show typing indicator
   showTypingIndicator();
 
+  // Check if the message contains "nutrition" to route to recipe chatbot
+  const isNutritionQuery = text.toLowerCase().includes('nutrition');
+  console.log('🔍 Detected nutrition query:', isNutritionQuery);
+  
+  const endpoint = isNutritionQuery ? '/recipe-chat' : '/chat';
+  console.log('📡 Sending request to endpoint:', endpoint);
+
   // Send message to backend and get AI response
   try {
-    const response = await fetch('http://localhost:5000/chat', {
+    const response = await fetch(`http://localhost:5000${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,6 +33,7 @@ document.getElementById("chat-form").addEventListener("submit", async function (
     }
 
     const result = await response.json();
+    console.log('📥 Received response:', result);
     
     // Hide typing indicator
     hideTypingIndicator();
@@ -36,7 +44,7 @@ document.getElementById("chat-form").addEventListener("submit", async function (
       addMessage("I'm sorry, I couldn't process your request. Please try again.", "ai");
     }
   } catch (error) {
-    console.error('Error sending message to backend:', error);
+    console.error('❌ Error sending message to backend:', error);
     hideTypingIndicator();
     addMessage("I'm sorry, there was an error connecting to the server. Please try again.", "ai");
   }
@@ -82,6 +90,11 @@ function addMessage(text, sender, isTyping = false) {
   messages.appendChild(msg);
   messages.scrollTop = messages.scrollHeight;
 }
+
+// Add welcome message on page load
+document.addEventListener('DOMContentLoaded', function() {
+  addMessage("Hey there! 🏆 I'm your AI companion. I can help you with sports discussions and nutrition advice. Just mention 'nutrition' in your message to get recipe recommendations! What would you like to talk about?", "ai");
+});
 
 // Conversation box logic
 let conversationCount = 0;
@@ -323,9 +336,16 @@ async function sendAudioToBackend(audioBlob) {
       // Show typing indicator
       showTypingIndicator();
       
-      // Send the transcribed text to the chat endpoint for AI response
+      // Check if the transcribed text contains "nutrition" to route to recipe chatbot
+      const isNutritionQuery = result.text.toLowerCase().includes('nutrition');
+      console.log('🔍 Voice: Detected nutrition query:', isNutritionQuery);
+      
+      const endpoint = isNutritionQuery ? '/recipe-chat' : '/chat';
+      console.log('📡 Voice: Sending request to endpoint:', endpoint);
+      
+      // Send the transcribed text to the appropriate endpoint for AI response
       try {
-        const chatResponse = await fetch('http://localhost:5000/chat', {
+        const chatResponse = await fetch(`http://localhost:5000${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -338,6 +358,7 @@ async function sendAudioToBackend(audioBlob) {
         }
 
         const chatResult = await chatResponse.json();
+        console.log('📥 Voice: Received response:', chatResult);
         
         // Hide typing indicator
         hideTypingIndicator();
@@ -348,7 +369,7 @@ async function sendAudioToBackend(audioBlob) {
           addMessage("I'm sorry, I couldn't process your request. Please try again.", 'ai');
         }
       } catch (chatError) {
-        console.error('Error getting AI response:', chatError);
+        console.error('❌ Voice: Error getting AI response:', chatError);
         hideTypingIndicator();
         addMessage("I'm sorry, there was an error getting the AI response. Please try again.", 'ai');
       }

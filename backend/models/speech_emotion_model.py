@@ -2,22 +2,42 @@ import numpy as np
 import librosa
 import pickle
 
-from tensorflow.keras.models import model_from_json
+try:
+    from tensorflow.keras.models import model_from_json
+except ImportError:
+    try:
+        from keras.models import model_from_json
+    except ImportError:
+        print("Warning: Could not import model_from_json. Emotion prediction may not work.")
+        model_from_json = None
 
 class EmotionPredictor:
     def __init__(self):
-        # Load model
-        with open("models/CNN_model.json", 'r') as json_file:
-            loaded_model_json = json_file.read()
-        self.model = model_from_json(loaded_model_json)
-        self.model.load_weights("models/CNN_model_weights.h5")
+        if model_from_json is None:
+            print("Warning: Emotion prediction model not available due to missing dependencies.")
+            self.model = None
+            self.scaler = None
+            self.encoder = None
+            return
+            
+        try:
+            # Load model
+            with open("models/CNN_model.json", 'r') as json_file:
+                loaded_model_json = json_file.read()
+            self.model = model_from_json(loaded_model_json)
+            self.model.load_weights("models/CNN_model_weights.h5")
 
-        # Load scaler and encoder
-        with open('models/scaler2.pickle', 'rb') as f:
-            self.scaler = pickle.load(f)
+            # Load scaler and encoder
+            with open('models/scaler2.pickle', 'rb') as f:
+                self.scaler = pickle.load(f)
 
-        with open('models/encoder2.pickle', 'rb') as f:
-            self.encoder = pickle.load(f)
+            with open('models/encoder2.pickle', 'rb') as f:
+                self.encoder = pickle.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load emotion prediction model: {e}")
+            self.model = None
+            self.scaler = None
+            self.encoder = None
 
     def _zcr(self, data, frame_length=2048, hop_length=512):
         return np.squeeze(librosa.feature.zero_crossing_rate(data, frame_length=frame_length, hop_length=hop_length))
@@ -44,6 +64,9 @@ class EmotionPredictor:
         return final
 
     def predict(self, path):
+        if self.model is None or self.scaler is None or self.encoder is None:
+            return "neutral"  # Default fallback
+            
         input_data = self.preprocess(path)
         predictions = self.model.predict(input_data)
         emotion = self.encoder.inverse_transform(predictions)[0][0]

@@ -43,6 +43,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId, onUpdateC
   const handleSendMessage = async (messageContent?: string) => {
     const content = messageContent || inputValue;
     if (!content.trim() || isLoading) return;
+    
     const userMessage: Message = {
       id: Date.now().toString(),
       content,
@@ -53,13 +54,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId, onUpdateC
     setMessages(newMessages);
     setInputValue('');
     setIsLoading(true);
+    
     try {
-      const res = await fetch('http://localhost:5000/chat', {
+      // Check if the message contains "nutrition" to route to recipe chatbot
+      const isNutritionQuery = content.toLowerCase().includes('nutrition');
+      console.log('🔍 Detected nutrition query:', isNutritionQuery);
+      
+      const endpoint = isNutritionQuery ? '/recipe-chat' : '/chat';
+      console.log('📡 Sending request to endpoint:', endpoint);
+      
+      const res = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: content })
       });
+      
       const data = await res.json();
+      console.log('📥 Received response:', data);
+      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.response || 'Sorry, something went wrong.',
@@ -72,6 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId, onUpdateC
       const title = userMessage.content.slice(0, 50) + (userMessage.content.length > 50 ? '...' : '');
       onUpdateConversation(conversationId, title, updatedMessages);
     } catch (error) {
+      console.error('❌ Error in chat request:', error);
       // Handle error
     } finally {
       setIsLoading(false);
@@ -175,7 +188,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ conversationId, onUpdateC
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask about sports, players, games, stats..."
+                placeholder="Ask about sports, players, games, stats, or nutrition..."
                 className="min-h-[48px] resize-none bg-background border-border text-foreground placeholder:text-muted-foreground"
                 disabled={isLoading}
               />
