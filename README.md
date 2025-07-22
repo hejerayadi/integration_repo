@@ -1,4 +1,4 @@
-# CNOTPERFORMai
+# CNOT PERFORM ai
 
 A platform to support athletes' mental well-being, featuring speech emotion recognition, a conversational AI, and nutrition advice.
 
