@@ -39,7 +39,7 @@ MentalHealthSupportAi/
 ### 1. Clone the Repository
 
 ```sh
-git clone <your-repo-url>
+git clone https://github.com/hejerayadi/integration_repo
 cd MentalHealthSupportAi/backend
 ```
 
